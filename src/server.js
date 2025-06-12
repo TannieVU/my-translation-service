@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '50mb' })); // Tăng giới hạn để nhận file lớn
 
 // Phục vụ các file tĩnh từ thư mục 'public'
-app.use(express.static(path.join(__dirname, '../../public')));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Sử dụng các routes API
 app.use('/api', translationRoutes);
