@@ -1,21 +1,27 @@
-// Lưu ý: Cần có code kết nối đến MongoDB ở đây.
-// Ví dụ: const { getDb } = require('../config/database');
-// const db = getDb();
+const { getDb } = require('../config/database'); // <-- THÊM DÒNG NÀY
 const { analyzeCharactersWithAI } = require('./aiServices');
 
-// Hàm chính để khởi tạo
 async function processNovel(title, originalText) {
     try {
-        // Thay thế wixData.save bằng mongodb.insertOne
-        // const novel = await db.collection('novels').insertOne({ ... });
-        // const job = await db.collection('translationJobs').insertOne({ ... });
+        const db = getDb(); // Lấy đối tượng CSDL đã được kết nối
+        const novelsCollection = db.collection('novels');
 
-        console.log(`Job for novel "${title}" received. Starting background process.`);
+        // Lưu thông tin truyện vào CSDL
+        const novelDocument = {
+            title: title,
+            originalText: originalText,
+            status: 'received',
+            createdAt: new Date(),
+        };
+        const result = await novelsCollection.insertOne(novelDocument);
+        const novelId = result.insertedId;
 
-        // Chạy quy trình trong nền
-        // processNovelAsync(novel.insertedId, job.insertedId, originalText);
+        console.log(`Job for novel "${title}" received. Novel ID: ${novelId}. Starting background process.`);
 
-        return { success: true, jobId: 'temp-job-id', novelId: 'temp-novel-id' };
+        // Chạy quy trình trong nền (chúng ta sẽ làm sau)
+        // processNovelAsync(novelId, originalText);
+
+        return { success: true, novelId: novelId };
 
     } catch (error) {
         console.error("Failed to start processing:", error);
@@ -23,14 +29,9 @@ async function processNovel(title, originalText) {
     }
 }
 
-async function processNovelAsync(novelId, jobId, originalText) {
-    console.log(`Background processing started for Job ID: ${jobId}`);
-    // Bước 1: Phân tích nhân vật
-    // const characterData = await analyzeCharactersWithAI(originalText);
-    // await db.collection('novels').updateOne({ _id: novelId }, { $set: { characterData } });
-
-    // ... các bước xử lý khác ...
-    console.log(`Job ${jobId} finished.`);
+// ... hàm processNovelAsync giữ nguyên ...
+async function processNovelAsync(novelId, originalText) {
+    // ...
 }
 
 module.exports = { processNovel };
