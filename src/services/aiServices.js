@@ -1,44 +1,66 @@
-// Import thư viện của OpenAI
-const { OpenAI } = require('openai');
+// const fetch = require('node-fetch'); // Không cần nữa vì Node.js 18+ đã có sẵn fetch
 
-// Khởi tạo client cho OpenAI
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-
-// --- HÀM GỌI GEMINI (giữ nguyên) ---
 async function callGeminiAPI(prompt) {
     const API_KEY = process.env.GEMINI_API_KEY;
+    if (!API_KEY) {
+        throw new Error("GEMINI_API_KEY is not set.");
+    }
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
 
-    // Trả về dữ liệu giả lập để kiểm tra
-    return { "simulatedResponse": `GEMINI Response for prompt: ${prompt.substring(0, 50)}...` };
-}
+    console.log("Making real API call to Gemini...");
 
-async function analyzeCharactersWithAI(text) {
-    const prompt = `Analyze the following text and identify all characters...: ${text.substring(0, 1000)}`;
-    // Hiện tại đang gọi Gemini, sau này có thể thay đổi
-    return callGeminiAPI(prompt);
-}
-
-// --- HÀM MỚI ĐỂ GỌI OPENAI ---
-async function callOpenAI_GPT4o(prompt) {
     try {
-        const response = await openai.chat.completions.create({
-            model: "gpt-4o", // Sử dụng mô hình gpt-4o
-            messages: [{ role: "user", content: prompt }],
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: prompt
+                    }]
+                }]
+            })
         });
-        return response.choices[0].message.content;
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`API call failed with status ${response.status}: ${errorBody}`);
+        }
+
+        const data = await response.json();
+        // Trả về phần nội dung text trong phản hồi của Gemini
+        return data.candidates[0].content.parts[0].text;
+
     } catch (error) {
-        console.error("Error calling OpenAI API:", error);
-        throw new Error("Failed to call OpenAI API");
+        console.error("Error calling Gemini API:", error);
+        throw error; // Ném lỗi ra để hàm processNovelAsync có thể bắt được
     }
 }
 
+async function analyzeCharactersWithAI(text) {
+    const prompt = `Analyze the following text and identify all characters, their relationships, and key attributes. Return the result as a valid JSON object only, with no other text before or after it. JSON structure should be: { "characters": [ { "name": "Character Name", "description": "Short description", "relationships": [...] } ] }. Text to analyze: ${text.substring(0, 5000)}`; // Tăng giới hạn ký tự
+    const jsonString = await callGeminiAPI(prompt);
 
-// Xuất các hàm để nơi khác có thể dùng
+    // Cố gắng parse chuỗi JSON trả về từ AI
+    try {
+        // AI đôi khi trả về chuỗi nằm trong khối markdown ```json ... ```
+        const cleanedJsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanedJsonString);
+    } catch (e) {
+        console.error("Failed to parse JSON response from AI:", jsonString);
+        return { error: "AI did not return valid JSON.", rawResponse: jsonString };
+    }
+}
+
+// Hàm gọi OpenAI giữ nguyên để dùng sau
+async function callOpenAI_GPT4o(prompt) {
+    // ...
+}
+
 module.exports = { 
     analyzeCharactersWithAI, 
     callGeminiAPI,
-    callOpenAI_GPT4o // Thêm hàm mới vào
+    callOpenAI_GPT4o
 };
