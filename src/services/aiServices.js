@@ -1,11 +1,18 @@
-// const fetch = require('node-fetch'); // Không cần nữa vì Node.js 18+ đã có sẵn fetch
+// Import thư viện của OpenAI
+const { OpenAI } = require('openai');
+
+// Khởi tạo client cho OpenAI
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
 
 async function callGeminiAPI(prompt) {
     const API_KEY = process.env.GEMINI_API_KEY;
     if (!API_KEY) {
         throw new Error("GEMINI_API_KEY is not set.");
     }
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
+    // ---- THAY ĐỔI DUY NHẤT NẰM Ở ĐÂY ----
+    const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${API_KEY}`;
 
     console.log("Making real API call to Gemini...");
 
@@ -35,17 +42,15 @@ async function callGeminiAPI(prompt) {
 
     } catch (error) {
         console.error("Error calling Gemini API:", error);
-        throw error; // Ném lỗi ra để hàm processNovelAsync có thể bắt được
+        throw error;
     }
 }
 
 async function analyzeCharactersWithAI(text) {
-    const prompt = `Analyze the following text and identify all characters, their relationships, and key attributes. Return the result as a valid JSON object only, with no other text before or after it. JSON structure should be: { "characters": [ { "name": "Character Name", "description": "Short description", "relationships": [...] } ] }. Text to analyze: ${text.substring(0, 5000)}`; // Tăng giới hạn ký tự
+    const prompt = `Analyze the following text and identify all characters, their relationships, and key attributes. Return the result as a valid JSON object only, with no other text before or after it. JSON structure should be: { "characters": [ { "name": "Character Name", "description": "Short description", "relationships": [...] } ] }. Text to analyze: ${text.substring(0, 5000)}`;
     const jsonString = await callGeminiAPI(prompt);
 
-    // Cố gắng parse chuỗi JSON trả về từ AI
     try {
-        // AI đôi khi trả về chuỗi nằm trong khối markdown ```json ... ```
         const cleanedJsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
         return JSON.parse(cleanedJsonString);
     } catch (e) {
