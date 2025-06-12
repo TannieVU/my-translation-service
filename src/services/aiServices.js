@@ -11,10 +11,10 @@ async function callGeminiAPI(prompt) {
     if (!API_KEY) {
         throw new Error("GEMINI_API_KEY is not set.");
     }
-    // ---- THAY ĐỔI DUY NHẤT NẰM Ở ĐÂY ----
-    const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${API_KEY}`;
+    // ---- THAY ĐỔI DUY NHẤT NẰM Ở ĐÂY: SỬ DỤNG MODEL MỚI ----
+    const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro-preview-06-05:generateContent?key=${API_KEY}`;
 
-    console.log("Making real API call to Gemini...");
+    console.log("Making real API call to Gemini with model gemini-2.5-pro-preview-06-05...");
 
     try {
         const response = await fetch(API_URL, {
