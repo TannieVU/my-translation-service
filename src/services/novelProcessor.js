@@ -1,26 +1,35 @@
-const { getDb } = require('../config/database'); // <-- THÊM DÒNG NÀY
+const { getDb } = require('../config/database');
 const { analyzeCharactersWithAI } = require('./aiServices');
 
 async function processNovel(title, originalText) {
     try {
-        const db = getDb(); // Lấy đối tượng CSDL đã được kết nối
+        const db = getDb();
         const novelsCollection = db.collection('novels');
 
-        // Lưu thông tin truyện vào CSDL
+        // Bước 1: Lưu thông tin truyện với trạng thái ban đầu là 'received'
         const novelDocument = {
             title: title,
-            originalText: originalText,
+            originalText: originalText, // Lưu ý: Trong thực tế có thể cần lưu file lớn ở nơi khác
             status: 'received',
             createdAt: new Date(),
         };
-        const result = await novelsCollection.insertOne(novelDocument);
-        const novelId = result.insertedId;
+        const insertResult = await novelsCollection.insertOne(novelDocument);
+        const novelId = insertResult.insertedId;
 
-        console.log(`Job for novel "${title}" received. Novel ID: ${novelId}. Starting background process.`);
+        console.log(`Novel "${title}" saved with ID: ${novelId}.`);
+
+        // Bước 2: Cập nhật trạng thái thành 'processing' ngay lập tức
+        await novelsCollection.updateOne(
+            { _id: novelId },
+            { $set: { status: 'processing', updatedAt: new Date() } }
+        );
+
+        console.log(`Job for novel ID ${novelId} status updated to 'processing'. Starting background process.`);
 
         // Chạy quy trình trong nền (chúng ta sẽ làm sau)
-        // processNovelAsync(novelId, originalText);
+        processNovelAsync(novelId, originalText);
 
+        // Trả về novelId để client có thể theo dõi
         return { success: true, novelId: novelId };
 
     } catch (error) {
@@ -29,9 +38,14 @@ async function processNovel(title, originalText) {
     }
 }
 
-// ... hàm processNovelAsync giữ nguyên ...
 async function processNovelAsync(novelId, originalText) {
-    // ...
+    console.log(`Background processing started for Novel ID: ${novelId}`);
+    // Trong tương lai, các bước phân tích sẽ nằm ở đây.
+    // Ví dụ:
+    // const characterData = await analyzeCharactersWithAI(originalText);
+    // await db.collection('novels').updateOne({ _id: novelId }, { $set: { characterData } });
+
+    console.log(`Job for ${novelId} finished.`);
 }
 
 module.exports = { processNovel };
