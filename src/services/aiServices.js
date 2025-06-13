@@ -16,7 +16,6 @@ async function callGeminiAPI(prompt) {
     if (!API_KEY) {
         throw new Error("GEMINI_API_KEY is not set.");
     }
-    // Sử dụng model có khả năng xử lý tốt và phổ biến
     const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${API_KEY}`;
 
     console.log("Making API call to Gemini with model gemini-1.5-pro...");
@@ -42,7 +41,6 @@ async function callGeminiAPI(prompt) {
         }
 
         const data = await response.json();
-        // Trích xuất nội dung văn bản từ response của API
         if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0].text) {
             return data.candidates[0].content.parts[0].text;
         } else {
@@ -61,9 +59,6 @@ async function callGeminiAPI(prompt) {
  * @returns {Promise<object>} - Một đối tượng JSON chứa thông tin đã phân tích.
  */
 async function analyzeCharactersWithAI(text) {
-    // ---- PROMPT ĐÃ ĐƯỢC TỐI ƯU HÓA ----
-    // Mục tiêu: Trích xuất thông tin cốt lõi để phục vụ việc dịch đại từ xưng hô.
-    // Các yếu tố trọng tâm: Địa vị, vai vế, giới tính, thái độ, phong cách nói.
     const prompt = `
     **Bối cảnh:** Kết quả phân tích này sẽ được một AI khác sử dụng để quyết định cách dịch đại từ xưng hô trong tiếng Việt một cách tự nhiên và chính xác. Các yếu tố then chốt để chọn đại từ trong tiếng Việt bao gồm: **địa vị** (gia đình, xã hội), **tuổi tác tương đối**, **giới tính**, **thái độ**, và **văn phong** của nhân vật.
 
@@ -101,20 +96,17 @@ async function analyzeCharactersWithAI(text) {
 
     **Văn bản cần phân tích:**
     ---
-    ${text.substring(0, 8000)} 
+    ${text} 
     ---
-    `;
-    // ------------------------------------------
+    `; // ---->>> LỖI ĐÃ ĐƯỢC SỬA: Gỡ bỏ .substring(0, 8000)
 
     const jsonString = await callGeminiAPI(prompt);
 
     try {
-        // Dọn dẹp các ký tự thừa (như ```json) mà AI có thể trả về
         const cleanedJsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
         return JSON.parse(cleanedJsonString);
     } catch (e) {
         console.error("Failed to parse JSON response from AI:", jsonString);
-        // Trả về lỗi để dễ dàng debug
         return { error: "AI did not return valid JSON.", rawResponse: jsonString };
     }
 }
